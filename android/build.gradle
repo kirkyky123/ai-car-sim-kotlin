@@ -1,0 +1,92 @@
+plugins {
+  id 'com.android.application'
+  id 'kotlin-android'
+}
+
+configurations {
+  // a bucket for the four "natives" jars
+  natives
+}
+
+android {
+  compileSdkVersion 35
+
+  defaultConfig {
+    applicationId "com.example.aicar"
+    minSdkVersion 19
+    targetSdkVersion 35
+    versionCode 1
+    versionName "1.0.0"
+
+    ndk {
+      // only package these four ABIs
+      abiFilters "armeabi-v7a","arm64-v8a","x86","x86_64"
+    }
+  }
+
+  sourceSets {
+    main {
+      assets.srcDirs = ["../assets"]
+      // this is where the .so's will land
+      jniLibs.srcDirs = ["src/main/jniLibs"]
+      java.srcDirs = ["src/main/java", "src/main/kotlin"]
+    }
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
+
+  namespace 'com.example.aicar'
+}
+
+dependencies {
+  implementation project(":core")
+  implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+  implementation "androidx.appcompat:appcompat:1.6.1"
+
+  // libKTX essentials
+  implementation "io.github.libktx:ktx-app:$ktxVersion"
+  implementation "io.github.libktx:ktx-graphics:$ktxVersion"
+  implementation "io.github.libktx:ktx-style:$ktxVersion"
+  implementation "io.github.libktx:ktx-collections:$ktxVersion"
+
+  // collect the four native jars
+  natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
+  natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+  natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
+  natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+}
+
+// Unpack each natives-jar into the correct ABI folder
+task copyAndroidNatives(type: Copy) {
+  into("$projectDir/src/main/jniLibs")
+
+  configurations.natives.files.each { File jar ->
+    // detect the ABI from the jar’s name
+    def abi = jar.name.contains("armeabi-v7a") ? "armeabi-v7a" :
+      jar.name.contains("arm64-v8a")   ? "arm64-v8a"   :
+        jar.name.contains("x86_64")      ? "x86_64"      :
+          jar.name.contains("x86")         ? "x86"         : null
+
+    if (abi) {
+      from(zipTree(jar)) {
+        include "**/*.so"
+        into abi
+      }
+    }
+  }
+}
+
+// Make sure the copy runs before we ever assemble the APK
+preBuild.dependsOn copyAndroidNatives
