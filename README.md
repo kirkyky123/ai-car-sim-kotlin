@@ -1,4 +1,10 @@
-# aicarsimulation
+# AI Car Simulation
+Find final APK in releases.
+
+Video below (was using KBM on emulator on video so user controls aren't as good. On mobile its perfectly fine)
+
+https://github.com/user-attachments/assets/afa191cb-9a2d-4b36-a137-eba830801382
+
 
 A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
 
